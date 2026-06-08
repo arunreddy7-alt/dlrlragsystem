@@ -1,0 +1,730 @@
+# Build a Complete Production-Ready Offline RAG System Using LangChain + Ollama
+
+Build a complete production-ready Retrieval-Augmented Generation (RAG) application.
+
+The application must be fully functional, fully offline, production-ready, and runnable immediately after installation.
+
+Generate every file completely.
+
+Do not generate placeholders.
+
+Do not generate TODO comments.
+
+Do not leave incomplete functions.
+
+All code must be production quality.
+
+---
+
+# Project Goal
+
+Create a fully offline AI document assistant that allows users to:
+
+* Register/Login
+* Upload PDFs
+* Chat with uploaded PDFs
+* Retrieve relevant information using Hybrid Retrieval
+* Get answers with source citations
+* Access the application from multiple devices on the same WiFi network
+
+The entire system must run locally.
+
+No internet access should be required after setup.
+
+---
+# Python Version Requirement (Mandatory)
+
+Use:
+
+Python 3.11.9
+
+The entire project must be developed, tested, and validated against Python 3.11.9 only.
+
+Do not use features that require:
+
+* Python 3.12
+* Python 3.13
+* Experimental Python features
+
+All dependencies must be compatible with Python 3.11.9.
+
+Generate:
+
+* .python-version
+* runtime documentation in README
+* setup instructions specifically for Python 3.11.9
+
+Example setup:
+
+python --version
+
+Expected output:
+
+Python 3.11.9
+
+Virtual Environment:
+
+python -m venv .venv
+
+Windows:
+
+.venv\Scripts\activate
+
+Linux/Mac:
+
+source .venv/bin/activate
+
+Install:
+
+pip install -r requirements.txt
+
+The generated code must run successfully on Python 3.11.9 without modification.
+
+----
+
+
+# Technology Stack
+
+Backend:
+
+* FastAPI
+
+Frontend:
+
+* Streamlit
+
+Database:
+
+* SQLite
+
+Authentication:
+
+* JWT
+* bcrypt
+
+RAG Framework:
+
+* LangChain
+
+Vector Store:
+
+* FAISS
+
+Keyword Retrieval:
+
+* BM25
+
+Hybrid Retrieval:
+
+* EnsembleRetriever
+
+LLM Runtime:
+
+* Ollama
+
+Operating Mode:
+
+* Fully Offline
+
+---
+
+# Mandatory Offline Requirement
+
+The entire application must work without internet access.
+
+The application must never depend on any external cloud service.
+
+The application must never make outbound internet requests.
+
+Do NOT use:
+
+* OpenAI API
+* Gemini API
+* Anthropic API
+* Claude API
+* Cohere API
+* HuggingFace Inference API
+* Azure OpenAI
+* AWS Bedrock
+* Google Vertex AI
+* Pinecone
+* Weaviate Cloud
+* Qdrant Cloud
+* LangSmith
+* Any SaaS platform
+* Any cloud-hosted model
+* Any hosted vector database
+
+Allowed:
+
+* Local FastAPI server
+* Local Streamlit server
+* Local SQLite database
+* Local Ollama server
+* Local FAISS indexes
+* Local BM25 indexes
+
+The project must continue functioning when the machine is disconnected from the internet.
+
+---
+
+# Models
+
+Use ONLY these Ollama models.
+
+Generation Model:
+
+phi3
+
+Embedding Model:
+
+nomic-embed-text
+
+Setup:
+
+ollama pull phi3:mini
+
+ollama pull nomic-embed-text
+
+Generation must use:
+
+ChatOllama(model="phi3:mini")
+
+Embeddings must use:
+
+OllamaEmbeddings(model="nomic-embed-text")
+
+No other models are allowed.
+
+---
+
+# LangChain Requirements
+
+Use LangChain throughout the project.
+
+Required Components:
+
+* PyPDFLoader
+* RecursiveCharacterTextSplitter
+* OllamaEmbeddings
+* FAISS
+* BM25Retriever
+* EnsembleRetriever
+* ChatOllama
+* ChatPromptTemplate
+* RunnablePassthrough
+* StrOutputParser
+
+Use modern LCEL chains.
+
+Do NOT use:
+
+* RetrievalQA
+* Deprecated LangChain APIs
+
+---
+
+# Functional Requirements
+
+## User Authentication
+
+Implement:
+
+* User Registration
+* User Login
+* User Logout
+* JWT Authentication
+* Protected Routes
+* Password Hashing using bcrypt
+
+Store users in SQLite.
+
+---
+
+## PDF Management
+
+Allow users to:
+
+* Upload PDFs
+* View Uploaded PDFs
+* Delete PDFs
+
+Requirements:
+
+* Maximum 5 PDFs per user
+* Support approximately 800 pages total
+* Store metadata
+* Automatically update indexes after uploads
+* Automatically rebuild indexes after deletions
+
+Metadata:
+
+* User ID
+* Filename
+* Upload Timestamp
+* Page Number
+
+---
+
+## PDF Processing
+
+Use:
+
+PyPDFLoader
+
+Extract:
+
+* Text
+* Metadata
+* Page Numbers
+
+Chunking Configuration:
+
+chunk_size = 1200
+
+chunk_overlap = 200
+
+Store page numbers in chunk metadata.
+
+---
+
+## Embeddings
+
+Use:
+
+OllamaEmbeddings
+
+Model:
+
+nomic-embed-text
+
+Requirements:
+
+* Persist embeddings
+* Load automatically at startup
+
+---
+
+## Vector Search
+
+Use:
+
+FAISS
+
+Requirements:
+
+* Persist FAISS indexes
+* Load indexes at startup
+* Incrementally update indexes after uploads
+* Rebuild indexes when documents are deleted
+
+---
+
+## Keyword Search
+
+Use:
+
+BM25Retriever
+
+Requirements:
+
+* Build BM25 indexes
+* Rebuild BM25 indexes after document changes
+
+---
+
+## Hybrid Retrieval
+
+Implement:
+
+EnsembleRetriever
+
+Configuration:
+
+FAISS:
+
+* top_k = 5
+
+BM25:
+
+* top_k = 5
+
+Weights:
+
+[0.7, 0.3]
+
+Deduplicate results.
+
+Final Context:
+
+8 chunks maximum.
+
+---
+
+## Context Handling
+
+Since phi3 has context limitations:
+
+* Retrieve 8 chunks maximum
+* Remove duplicate chunks
+* Truncate context intelligently if necessary
+* Preserve citations after truncation
+
+---
+
+## Chat System
+
+Implement:
+
+* Multi-turn conversations
+* Chat history
+* Persistent storage
+
+Flow:
+
+User Question
+↓
+Hybrid Retrieval
+↓
+Context Assembly
+↓
+Phi3 Mini
+↓
+Answer
+
+Store history in SQLite.
+
+Store:
+
+* User Message
+* Assistant Message
+* Timestamp
+* User ID
+
+---
+
+## Source Citations
+
+Every answer must include citations.
+
+Format:
+
+Sources:
+
+* filename.pdf (Page 15)
+* filename2.pdf (Page 23)
+
+Sources must come from retrieved chunks.
+
+---
+
+# Database Design
+
+Use SQLite.
+
+Create:
+
+users
+
+Fields:
+
+* id
+* username
+* email
+* password_hash
+* created_at
+
+documents
+
+Fields:
+
+* id
+* user_id
+* filename
+* upload_time
+
+chunks
+
+Fields:
+
+* id
+* document_id
+* page_number
+* chunk_text
+* metadata
+
+chat_history
+
+Fields:
+
+* id
+* user_id
+* role
+* message
+* timestamp
+
+---
+
+# Backend Requirements
+
+Use FastAPI.
+
+Endpoints:
+
+POST /register
+
+POST /login
+
+GET /me
+
+POST /upload
+
+GET /documents
+
+DELETE /documents/{id}
+
+POST /chat
+
+GET /chat/history
+
+GET /health
+
+Implement:
+
+* Validation
+* Authentication Middleware
+* JWT Verification
+* Logging
+* Exception Handling
+
+Use Pydantic v2 models.
+
+---
+
+# Frontend Requirements
+
+Use Streamlit.
+
+Pages:
+
+## Login
+
+* Username
+* Password
+* Login Button
+
+## Registration
+
+* Username
+* Email
+* Password
+
+## Dashboard
+
+* Upload PDF
+* View PDFs
+* Delete PDFs
+
+## Chat
+
+* Chat Interface
+* Conversation History
+* Source Citations
+* Loading Indicators
+
+## Settings
+
+Allow changing backend API URL.
+
+Example:
+
+http://192.168.1.100:8000
+
+Do NOT hardcode localhost.
+
+---
+
+# Multi-Device LAN Support
+
+The application must work on multiple devices connected to the same local network.
+
+Backend Startup:
+
+uvicorn backend.main:app
+
+Frontend Startup:
+
+streamlit run frontend/app.py
+
+The application must be accessible from:
+
+http://HOST_MACHINE_IP:8501
+
+Devices Supported:
+
+* Desktop
+* Laptop
+* Mobile Phone
+* Tablet
+
+All devices must be able to use the application through the browser when connected to the same WiFi network.
+
+No internet access required.
+
+No cloud deployment required.
+
+LAN-only operation is sufficient.
+
+---
+
+# Project Structure
+
+rag-project/
+
+backend/
+│
+├── api/
+│   ├── auth.py
+│   ├── upload.py
+│   ├── documents.py
+│   └── chat.py
+│
+├── core/
+│   ├── config.py
+│   ├── database.py
+│   ├── security.py
+│   └── logging.py
+│
+├── rag/
+│   ├── parser.py
+│   ├── chunker.py
+│   ├── embeddings.py
+│   ├── vector_store.py
+│   ├── bm25_store.py
+│   ├── hybrid_retriever.py
+│   ├── generator.py
+│   └── ingestion.py
+│
+├── models/
+│
+├── uploads/
+│
+├── indexes/
+│
+└── main.py
+
+frontend/
+│
+└── app.py
+
+tests/
+│
+├── test_auth.py
+├── test_upload.py
+├── test_chat.py
+└── test_rag.py
+
+requirements.txt
+
+.env.example
+
+README.md
+
+---
+
+# Required Dependencies
+
+fastapi>=0.116,<1.0
+
+uvicorn[standard]>=0.35,<1.0
+
+pydantic>=2.11,<3.0
+
+pydantic-settings>=2.8,<3.0
+
+python-multipart>=0.0.20,<1.0
+
+aiosqlite>=0.21,<1.0
+
+PyJWT>=2.10,<3.0
+
+bcrypt>=5.0,<6.0
+
+numpy>=2.3,<3.0
+
+langchain>=0.3,<1.0
+
+langchain-core>=0.3,<1.0
+
+langchain-community>=0.3,<1.0
+
+langchain-text-splitters>=0.3,<1.0
+
+faiss-cpu>=1.12,<2.0
+
+rank-bm25>=0.2.2,<1.0
+
+pypdf>=5.8,<7.0
+
+python-docx>=1.1,<2.0
+
+streamlit>=1.49,<2.0
+
+pytest>=8.4,<9.0
+
+pytest-asyncio>=1.1,<2.0
+
+loguru>=0.7,<1.0
+
+---
+
+# Code Quality Requirements
+
+Generate complete code for every file.
+
+Include:
+
+* Type Hints
+* Docstrings
+* Logging
+* Exception Handling
+* Validation
+* Unit Tests
+
+No placeholders.
+
+No TODO comments.
+
+No incomplete implementations.
+
+---
+
+# Deliverables
+
+Generate:
+
+* Complete Backend
+* Complete Frontend
+* Complete Database Layer
+* Complete RAG Pipeline
+* Complete Authentication System
+* Complete Hybrid Retrieval System
+* Complete Streamlit UI
+* Complete Tests
+* Complete README
+* Complete requirements.txt
+* Complete .env.example
+
+The project must run immediately after:
+
+pip install -r requirements.txt
+
+ollama pull phi3
+
+ollama pull nomic-embed-text
+
+uvicorn backend.main --host 0.0.0.0 --port 8000
+
+streamlit run frontend/app.py --server.address 0.0.0.0
+
+Generate every file completely and provide production-ready code.
