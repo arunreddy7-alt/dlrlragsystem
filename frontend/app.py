@@ -14,9 +14,12 @@ from uuid import uuid4
 
 import streamlit as st
 
-st.set_page_config(page_title="DLRL RAG Assistant", page_icon="PDF", layout="wide")
+st.set_page_config(page_title="Offline RAG Assistant", page_icon="PDF", layout="wide")
 
 LOGO_PATH = Path(__file__).parent / "assets" / "dlrl-logo.png"
+DEFAULT_TIMEOUT_SECONDS = 120
+UPLOAD_TIMEOUT_SECONDS = 1800
+CHAT_TIMEOUT_SECONDS = 600
 
 
 def initialize_state() -> None:
@@ -50,6 +53,7 @@ def api_request(
     path: str,
     payload: dict[str, Any] | None = None,
     file_payload: tuple[str, bytes, str] | None = None,
+    timeout: int | None = None,
 ) -> Any:
     """Call the FastAPI backend using only the standard library."""
 
@@ -77,8 +81,9 @@ def api_request(
         headers["Content-Type"] = "application/json"
         data = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url, data=data, headers=headers, method=method)
+    request_timeout = timeout or DEFAULT_TIMEOUT_SECONDS
     try:
-        with urllib.request.urlopen(request, timeout=120) as response:
+        with urllib.request.urlopen(request, timeout=request_timeout) as response:
             content = response.read()
             if response.status == 204:
                 return None
@@ -95,8 +100,8 @@ def api_request(
     except (ConnectionResetError, TimeoutError, socket.timeout, OSError) as exc:
         raise ValueError(
             "The backend connection was closed before a response was received. "
-            "Confirm the Backend API URL points to FastAPI on port 8000, "
-            "then check the backend terminal for the error that occurred while handling this request."
+            "For large PDFs, keep the backend and Streamlit terminals open and wait for local indexing to finish. "
+            "If this repeats, check the backend terminal for the exact error."
         ) from exc
 
 
@@ -149,7 +154,13 @@ def dashboard_page() -> None:
     uploaded = st.file_uploader("Upload PDF", type=["pdf"])
     if uploaded is not None and st.button("Upload PDF", type="primary"):
         try:
-            api_request("POST", "/upload", file_payload=(uploaded.name, uploaded.read(), "application/pdf"))
+            with st.spinner("Uploading, extracting text, embedding chunks, and building local indexes. Large PDFs can take several minutes."):
+                api_request(
+                    "POST",
+                    "/upload",
+                    file_payload=(uploaded.name, uploaded.read(), "application/pdf"),
+                    timeout=UPLOAD_TIMEOUT_SECONDS,
+                )
             st.success("PDF uploaded and indexed")
             st.rerun()
         except ValueError as exc:
@@ -213,7 +224,7 @@ def render_chat(endpoint: str, input_label: str, spinner_text: str, show_history
         with st.chat_message("assistant"):
             with st.spinner(spinner_text):
                 try:
-                    result = api_request("POST", endpoint, {"message": prompt})
+                    result = api_request("POST", endpoint, {"message": prompt}, timeout=CHAT_TIMEOUT_SECONDS)
                     st.markdown(result["answer"])
                 except ValueError as exc:
                     st.error(str(exc))
